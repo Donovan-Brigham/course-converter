@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Course Section Converter</title>
+<title>Laurie's Tools</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap">
@@ -62,42 +62,71 @@ body {
 
 /* ---- layout ---- */
 .app {
-  max-width: 620px;
+  max-width: 700px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
-/* ---- header ---- */
-header { text-align: center; padding-block: 4px 0; }
-
-.brand {
-  display: inline-flex;
+/* ---- site header ---- */
+.site-header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 20px;
+  margin-bottom: 4px;
+}
+.site-brand {
+  display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 12px;
 }
-.brand-icon {
-  width: 40px; height: 40px;
+.site-icon {
+  width: 44px; height: 44px;
   background: var(--accent);
-  border-radius: 9px;
+  border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-h1 {
+.site-title {
   font-family: var(--ff-head);
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 700;
   color: var(--fg);
   margin: 0;
-  text-wrap: balance;
 }
-.sub {
-  font-size: .875rem;
+.site-sub {
+  font-size: .8125rem;
   color: var(--fg-muted);
-  margin: 4px 0 0;
-  line-height: 1.5;
+  margin: 3px 0 0;
+}
+
+/* ---- tool section ---- */
+.tool-section {}
+.tool-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.tool-icon {
+  width: 32px; height: 32px;
+  background: var(--accent-soft);
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  color: var(--accent-mid);
+}
+h2 {
+  font-family: var(--ff-head);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--fg);
+  margin: 0;
+}
+.tool-sub {
+  font-size: .8125rem;
+  color: var(--fg-muted);
+  margin: 1px 0 0;
 }
 
 /* ---- card ---- */
@@ -218,7 +247,7 @@ h1 {
 
 /* ---- instructions ---- */
 .instructions { font-size: .875rem; }
-.instructions h2 { font-family: var(--ff-head); font-size: .9375rem; margin: 0 0 8px; }
+.instructions h3 { font-family: var(--ff-head); font-size: .9375rem; margin: 0 0 8px; color: var(--fg); }
 .instructions ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 5px; }
 .instructions li { color: var(--fg-muted); line-height: 1.5; }
 .instructions strong { color: var(--fg); }
@@ -232,26 +261,40 @@ footer {
 <body>
 <div class="app">
 
-  <!-- header -->
-  <header>
-    <div class="brand">
-      <div class="brand-icon">
-        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="2" y="2" width="11" height="14" rx="2" stroke="white" stroke-width="1.6" fill="none"/>
-          <line x1="4.5" y1="6" x2="10.5" y2="6" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
-          <line x1="4.5" y1="9" x2="10.5" y2="9" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
-          <line x1="4.5" y1="12" x2="7.5" y2="12" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
-          <rect x="11" y="10" width="9" height="10" rx="1.5" fill="white" fill-opacity=".25"/>
-          <rect x="11.75" y="10.75" width="7.5" height="8.5" rx="1" stroke="white" stroke-width="1.5" fill="none"/>
-          <line x1="13.5" y1="14" x2="17.5" y2="14" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
-          <line x1="13.5" y1="17" x2="16.5" y2="17" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+  <!-- site header -->
+  <header class="site-header">
+    <div class="site-brand">
+      <div class="site-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
         </svg>
       </div>
-      <h1>Course Section Converter</h1>
+      <div>
+        <p class="site-title">Laurie's Tools</p>
+        <p class="site-sub">Browser-based utilities — no installation required</p>
+      </div>
     </div>
-    <p class="sub">Drop in a course section PDF and download a formatted Excel spreadsheet.<br>
-    Runs entirely in your browser — no installation required.</p>
   </header>
+
+  <!-- ===== TOOL 1: Course Section Converter ===== -->
+  <section class="tool-section">
+    <div class="tool-header">
+      <div class="tool-icon">
+        <svg width="17" height="17" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="2" width="11" height="14" rx="2"/>
+          <line x1="4.5" y1="6" x2="10.5" y2="6"/>
+          <line x1="4.5" y1="9" x2="10.5" y2="9"/>
+          <line x1="4.5" y1="12" x2="7.5" y2="12"/>
+          <rect x="11" y="10" width="9" height="10" rx="1.5"/>
+          <line x1="13.5" y1="14" x2="17.5" y2="14"/>
+          <line x1="13.5" y1="17" x2="16.5" y2="17"/>
+        </svg>
+      </div>
+      <div>
+        <h2>Course Section Converter</h2>
+        <p class="tool-sub">PDF → Excel spreadsheet, merged &amp; deduplicated</p>
+      </div>
+    </div>
 
   <!-- drop / pick -->
   <div class="card">
@@ -282,7 +325,7 @@ footer {
 
   <!-- instructions -->
   <div class="card instructions">
-    <h2>How to use</h2>
+    <h3>How to use</h3>
     <ol>
       <li>Open <strong>Find Course Sections</strong> in your scheduling system, run your search, then use <strong>Print → Save as PDF</strong> to export it.</li>
       <li>Drop the PDF above (or click <strong>Choose PDF(s)</strong>). You can add multiple departments at once — they'll be merged into one file.</li>
@@ -290,6 +333,8 @@ footer {
       <li>Columns: Course ID · Section # · Course Title · Component · Pattern · Start Time · End Time · Location (Room) · Instructor · Notes · Cap</li>
     </ol>
   </div>
+
+  </section><!-- /tool-section -->
 
   <footer>
     Works in Chrome or Edge &nbsp;·&nbsp; PDFs are cleared from memory after conversion &nbsp;·&nbsp; No files are stored or uploaded
