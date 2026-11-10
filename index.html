@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Course Section Converter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* ---- tokens ---- */
+:root {
+  --bg:          #f1f5f9;
+  --surface:     #ffffff;
+  --surface-alt: #f8fafc;
+  --fg:          #1a2332;
+  --fg-muted:    #64748b;
+  --accent:      #1f4e79;
+  --accent-soft: #dbeafe;
+  --accent-mid:  #3b82f6;
+  --ok:          #0d9488;
+  --ok-bg:       #f0fdfa;
+  --bad:         #dc2626;
+  --bad-bg:      #fef2f2;
+  --border:      #e2e8f0;
+  --shadow:      0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  --r:           10px;
+  --ff-head:     'Space Grotesk', system-ui, sans-serif;
+  --ff-body:     'Inter', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:          #0f172a;
+    --surface:     #1e293b;
+    --surface-alt: #162032;
+    --fg:          #e2e8f0;
+    --fg-muted:    #94a3b8;
+    --accent:      #3b82f6;
+    --accent-soft: #1e3a5f;
+    --accent-mid:  #60a5fa;
+    --ok:          #2dd4bf;
+    --ok-bg:       #042f2e;
+    --bad:         #f87171;
+    --bad-bg:      #2d1515;
+    --border:      #2d3f55;
+    --shadow:      0 1px 3px rgba(0,0,0,.35);
+    color-scheme:  dark;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  font-family: var(--ff-body);
+  background: var(--bg);
+  color: var(--fg);
+  margin: 0;
+  min-height: 100vh;
+  padding: 40px max(16px, 5vw);
+}
+
+/* ---- layout ---- */
+.app {
+  max-width: 620px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ---- header ---- */
+header { text-align: center; padding-block: 4px 0; }
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.brand-icon {
+  width: 40px; height: 40px;
+  background: var(--accent);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+h1 {
+  font-family: var(--ff-head);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--fg);
+  margin: 0;
+  text-wrap: balance;
+}
+.sub {
+  font-size: .875rem;
+  color: var(--fg-muted);
+  margin: 4px 0 0;
+  line-height: 1.5;
+}
+
+/* ---- card ---- */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+  padding: 24px;
+}
+
+/* ---- drop zone ---- */
+.drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 36px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, transform .1s;
+  background: var(--surface-alt);
+  user-select: none;
+}
+.drop-zone:hover, .drop-zone.over {
+  border-color: var(--accent-mid);
+  background: var(--accent-soft);
+}
+.drop-zone.over { transform: scale(1.01); }
+
+.drop-icon {
+  width: 44px; height: 44px;
+  margin: 0 auto 12px;
+  color: var(--fg-muted);
+  display: block;
+}
+.drop-p  { font-family: var(--ff-head); font-size: .9375rem; font-weight: 600; margin: 0 0 4px; color: var(--fg); }
+.drop-p2 { font-size: .8125rem; color: var(--fg-muted); margin: 0 0 16px; }
+
+.pick-btn {
+  display: inline-block;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--ff-body);
+  font-size: .875rem;
+  font-weight: 600;
+  padding: 9px 22px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: opacity .1s;
+}
+.pick-btn:hover { opacity: .88; }
+
+/* ---- file list ---- */
+.file-list { display: flex; flex-direction: column; gap: 8px; }
+
+.f-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: .875rem;
+}
+.f-pdf-icon { flex-shrink: 0; color: var(--bad); width: 18px; height: 18px; }
+.f-name {
+  flex: 1; min-width: 0;
+  font-weight: 500;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.f-status { flex-shrink: 0; font-size: .75rem; color: var(--fg-muted); font-variant-numeric: tabular-nums; }
+.f-rm {
+  flex-shrink: 0;
+  background: none; border: none; cursor: pointer;
+  color: var(--fg-muted); padding: 2px; line-height: 0; border-radius: 4px;
+  transition: color .1s;
+}
+.f-rm:hover { color: var(--bad); }
+
+/* ---- convert button ---- */
+.convert-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--ff-head);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: opacity .15s, transform .1s;
+  letter-spacing: .01em;
+}
+.convert-btn:hover:not(:disabled) { opacity: .88; }
+.convert-btn:active:not(:disabled) { transform: scale(.99); }
+.convert-btn:disabled { opacity: .38; cursor: not-allowed; }
+
+/* ---- status ---- */
+.status-box {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 14px 16px;
+  border-radius: var(--r);
+  font-size: .875rem; font-weight: 500; line-height: 1.5;
+}
+.status-box.info    { background: var(--accent-soft); color: var(--accent); border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); }
+.status-box.ok      { background: var(--ok-bg); color: var(--ok); border: 1px solid color-mix(in srgb, var(--ok) 20%, transparent); }
+.status-box.bad     { background: var(--bad-bg); color: var(--bad); border: 1px solid color-mix(in srgb, var(--bad) 20%, transparent); }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  width: 17px; height: 17px; flex-shrink: 0;
+  border: 2px solid currentColor; border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin .65s linear infinite;
+}
+
+/* ---- instructions ---- */
+.instructions { font-size: .875rem; }
+.instructions h2 { font-family: var(--ff-head); font-size: .9375rem; margin: 0 0 8px; }
+.instructions ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 5px; }
+.instructions li { color: var(--fg-muted); line-height: 1.5; }
+.instructions strong { color: var(--fg); }
+
+footer {
+  text-align: center; font-size: .75rem; color: var(--fg-muted);
+  padding-bottom: 8px; line-height: 1.6;
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- header -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="2" width="11" height="14" rx="2" stroke="white" stroke-width="1.6" fill="none"/>
+          <line x1="4.5" y1="6" x2="10.5" y2="6" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="4.5" y1="9" x2="10.5" y2="9" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="4.5" y1="12" x2="7.5" y2="12" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+          <rect x="11" y="10" width="9" height="10" rx="1.5" fill="white" fill-opacity=".25"/>
+          <rect x="11.75" y="10.75" width="7.5" height="8.5" rx="1" stroke="white" stroke-width="1.5" fill="none"/>
+          <line x1="13.5" y1="14" x2="17.5" y2="14" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="13.5" y1="17" x2="16.5" y2="17" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h1>Course Section Converter</h1>
+    </div>
+    <p class="sub">Drop in a course section PDF and download a formatted Excel spreadsheet.<br>
+    Runs entirely in your browser — no installation required.</p>
+  </header>
+
+  <!-- drop / pick -->
+  <div class="card">
+    <div class="drop-zone" id="dropZone">
+      <svg class="drop-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M26 6H10a4 4 0 00-4 4v24a4 4 0 004 4h24a4 4 0 004-4V18L26 6z"/>
+        <path d="M26 6v12h12M22 22v8M18 26l4-4 4 4"/>
+      </svg>
+      <p class="drop-p">Drop PDF file(s) here</p>
+      <p class="drop-p2">Multiple PDFs are combined and deduplicated automatically</p>
+      <button class="pick-btn" onclick="document.getElementById('fi').click()">Choose PDF(s)</button>
+      <input type="file" id="fi" accept=".pdf" multiple style="display:none">
+    </div>
+  </div>
+
+  <!-- file list -->
+  <div id="flWrap" hidden>
+    <div class="file-list" id="fl"></div>
+  </div>
+
+  <!-- convert -->
+  <button class="convert-btn" id="convertBtn" disabled onclick="doConvert()">
+    Convert to Excel
+  </button>
+
+  <!-- status -->
+  <div id="statusWrap" hidden></div>
+
+  <!-- instructions -->
+  <div class="card instructions">
+    <h2>How to use</h2>
+    <ol>
+      <li>Open <strong>Find Course Sections</strong> in your scheduling system, run your search, then use <strong>Print → Save as PDF</strong> to export it.</li>
+      <li>Drop the PDF above (or click <strong>Choose PDF(s)</strong>). You can add multiple departments at once — they'll be merged into one file.</li>
+      <li>Click <strong>Convert to Excel</strong>. The spreadsheet downloads to your Downloads folder automatically.</li>
+      <li>Columns: Course ID · Section # · Course Title · Component · Pattern · Start Time · End Time · Location (Room) · Instructor · Notes · Cap</li>
+    </ol>
+  </div>
+
+  <footer>
+    Works in Chrome or Edge &nbsp;·&nbsp; PDFs are cleared from memory after conversion &nbsp;·&nbsp; No files are stored or uploaded
+  </footer>
+
+</div><!-- .app -->
+
+<script>
+// =====================================================================
+// PDF.js worker — blob wrapper so it loads from any context
+// =====================================================================
+(function() {
+  try {
+    const src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const blob = new Blob([`importScripts('${src}');`], { type: 'text/javascript' });
+    pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(blob);
+  } catch(e) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+})();
+
+// =====================================================================
+// Parsing (translated from extract_course_sections.py)
+// =====================================================================
+const DAY_MAP = {
+  Monday:'M', Tuesday:'T', Wednesday:'W',
+  Thursday:'R', Friday:'F', Saturday:'S', Sunday:'U'
+};
+
+function convertPattern(s) {
+  if (!s || s.trim() === '' || s.trim() === '(empty)') return '';
+  return s.split('/').map(d => {
+    d = d.trim();
+    return DAY_MAP[d] || (d ? d[0] : '');
+  }).filter(Boolean).join('');
+}
+
+function parseTimeRange(s) {
+  if (!s || s.trim() === '' || s.trim() === '(empty)') return ['', ''];
+  const m = s.trim().match(/^(.+?)\s*-\s*(.+)$/);
+  return m ? [m[1].trim(), m[2].trim()] : [s.trim(), ''];
+}
+
+function splitTwoCol(line) {
+  const parts = line.trim().split(/\s{2,}/);
+  if (parts.length >= 2) return [parts[0].trim(), parts[1].trim()];
+  return [parts[0]?.trim() || '', ''];
+}
+
+function preprocessLines(lines) {
+  return lines.filter(line => {
+    const s = line.trim();
+    if (!s) return false;
+    if (s.startsWith('http://') || s.startsWith('https://')) return false;
+    if (/^\d+\/\d+$/.test(s)) return false;
+    if (/^\d+\/\d+\/\d+,\s+\d+:\d+/.test(s)) return false;
+    return true;
+  });
+}
+
+function parseSectionBlock(lines) {
+  const nonempty = lines.filter(l => l.trim());
+  if (!nonempty.length) return null;
+
+  const hm = nonempty[0].trim().match(/^([A-Z]{2,4}\s+[A-Z0-9]+)-(\S+)\s+-\s+(.+)$/);
+  if (!hm) return null;
+
+  const courseId   = hm[1].trim();
+  const sectionNum = hm[2].trim();
+
+  const titleParts = [hm[3].trim()];
+  for (let i = 1; i < Math.min(6, nonempty.length); i++) {
+    if (nonempty[i].includes(' | ')) break;
+    titleParts.push(nonempty[i].trim());
+  }
+  const title = titleParts.filter(Boolean).join(' ');
+
+  let location = '', pattern = '', startTime = '', endTime = '';
+  for (const line of lines) {
+    if (/^Section Details/i.test(line)) {
+      const summary = line.replace(/^Section Details\s*/i, '').trim();
+      if (summary && summary !== '(empty)') {
+        const parts = summary.split('|').map(p => p.trim());
+        if (parts[0]) location  = parts[0];
+        if (parts[1]) pattern   = convertPattern(parts[1]);
+        if (parts[2]) [startTime, endTime] = parseTimeRange(parts[2]);
+      }
+      break;
+    }
+  }
+
+  let component = '', instructor = '', notes = '', cap = '';
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.includes('Instructors') && line.includes('Instructional Format')) {
+      for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
+        if (lines[j].trim()) {
+          const [l, r] = splitTwoCol(lines[j]);
+          if (l && l !== '(empty)') instructor = l;
+          if (r) component = r;
+          break;
+        }
+      }
+    } else if (line.includes('Delivery Mode') && line.includes('Enrolled/Capacity')) {
+      for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
+        if (lines[j].trim()) {
+          const [l, r] = splitTwoCol(lines[j]);
+          if (l && l !== '(empty)') notes = l;
+          const cm = r.match(/\d+\/(\d+)/);
+          if (cm) cap = cm[1];
+          break;
+        }
+      }
+    }
+  }
+
+  return {
+    'Course ID': courseId, 'Section #': sectionNum, 'Course Title': title,
+    'Component': component, 'Pattern': pattern, 'Start Time': startTime,
+    'End Time': endTime, 'Location (Room)': location,
+    'Instructor': instructor, 'Notes': notes, 'Cap': cap
+  };
+}
+
+const HEADER_RE = /^[A-Z]{2,4}\s+[A-Z0-9]+-\S+\s+-\s+.+$/;
+
+function parseText(allLines) {
+  const clean  = preprocessLines(allLines);
+  const blocks = [];
+  let cur      = [];
+  for (const line of clean) {
+    if (HEADER_RE.test(line) && cur.length > 0) { blocks.push(cur); cur = [line]; }
+    else cur.push(line);
+  }
+  if (cur.length) blocks.push(cur);
+  return blocks.map(parseSectionBlock).filter(Boolean);
+}
+
+// =====================================================================
+// PDF.js text extraction → line reconstruction
+// =====================================================================
+
+function reconstructLines(items) {
+  if (!items.length) return [];
+
+  const YTOL = 2;
+  const groups = new Map();
+  for (const item of items) {
+    if (!item.str || !item.str.trim()) continue;
+    const yKey = Math.round(item.transform[5] / YTOL) * YTOL;
+    if (!groups.has(yKey)) groups.set(yKey, []);
+    groups.get(yKey).push({ str: item.str, x: item.transform[4], w: item.width ?? 0 });
+  }
+
+  return [...groups.keys()]
+    .sort((a, b) => b - a)
+    .map(y => {
+      const row = groups.get(y).sort((a, b) => a.x - b.x);
+      let result  = '';
+      let prevEnd = null;
+      for (const it of row) {
+        if (prevEnd !== null) {
+          const gap = it.x - prevEnd;
+          if (gap > 20)     result += '  ';
+          else if (gap > 1) result += ' ';
+        }
+        result  += it.str;
+        prevEnd  = it.x + it.w;
+      }
+      return result.trim();
+    })
+    .filter(line => line.length > 0);
+}
+
+async function extractLines(file) {
+  const buf  = await file.arrayBuffer();
+  const pdf  = await pdfjsLib.getDocument({ data: buf }).promise;
+  const out  = [];
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page    = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    out.push(...reconstructLines(content.items));
+  }
+  return out;
+}
+
+// =====================================================================
+// UI state
+// =====================================================================
+
+let files    = [];
+let statuses = [];
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderFiles() {
+  const wrap = document.getElementById('flWrap');
+  const list = document.getElementById('fl');
+  if (!files.length) { wrap.hidden = true; return; }
+  wrap.hidden = false;
+  list.innerHTML = files.map((f, i) => `
+    <div class="f-item" id="fi-${i}">
+      <svg class="f-pdf-icon" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"/>
+      </svg>
+      <span class="f-name" title="${esc(f.name)}">${esc(f.name)}</span>
+      <span class="f-status" id="fs-${i}">${esc(statuses[i] || '')}</span>
+      <button class="f-rm" onclick="removeFile(${i})" title="Remove">
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <line x1="1" y1="1" x2="13" y2="13"/><line x1="13" y1="1" x2="1" y2="13"/>
+        </svg>
+      </button>
+    </div>
+  `).join('');
+  document.getElementById('convertBtn').disabled = false;
+}
+
+function removeFile(i) {
+  files.splice(i, 1);
+  statuses.splice(i, 1);
+  renderFiles();
+  if (!files.length) {
+    document.getElementById('convertBtn').disabled = true;
+    document.getElementById('statusWrap').hidden   = true;
+  }
+}
+
+function addFiles(newFiles) {
+  for (const f of newFiles) {
+    if (!files.find(e => e.name === f.name && e.size === f.size)) {
+      files.push(f);
+      statuses.push('');
+    }
+  }
+  renderFiles();
+}
+
+function setFileStatus(i, msg) {
+  statuses[i] = msg;
+  const el = document.getElementById(`fs-${i}`);
+  if (el) el.textContent = msg;
+}
+
+function showStatus(html, type) {
+  const wrap = document.getElementById('statusWrap');
+  wrap.hidden = false;
+  let icon = '';
+  if (type === 'info') icon = '<div class="spinner"></div>';
+  if (type === 'ok')   icon = '<svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" style="flex-shrink:0"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>';
+  if (type === 'bad')  icon = '<svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" style="flex-shrink:0"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>';
+  wrap.innerHTML = `<div class="status-box ${type}">${icon}<span>${html}</span></div>`;
+}
+
+// =====================================================================
+// Drop zone events
+// =====================================================================
+const dz = document.getElementById('dropZone');
+const fi = document.getElementById('fi');
+
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', e => { if (!dz.contains(e.relatedTarget)) dz.classList.remove('over'); });
+dz.addEventListener('drop', e => {
+  e.preventDefault();
+  dz.classList.remove('over');
+  addFiles([...e.dataTransfer.files].filter(f => f.name.toLowerCase().endsWith('.pdf')));
+});
+fi.addEventListener('change', () => { addFiles([...fi.files]); fi.value = ''; });
+
+// =====================================================================
+// Main conversion
+// =====================================================================
+async function doConvert() {
+  if (!files.length) return;
+
+  const btn = document.getElementById('convertBtn');
+  btn.disabled = true;
+  showStatus('Starting&hellip;', 'info');
+
+  const allRows = [];
+
+  try {
+    for (let i = 0; i < files.length; i++) {
+      showStatus(`Reading <strong>${esc(files[i].name)}</strong> (${i+1} of ${files.length})&hellip;`, 'info');
+      setFileStatus(i, 'reading…');
+
+      const lines = await extractLines(files[i]);
+      const rows  = parseText(lines);
+
+      setFileStatus(i, `${rows.length} sections`);
+      allRows.push(...rows);
+    }
+
+    // Deduplicate: keep first occurrence by Course ID + Section #
+    const seen     = new Set();
+    const combined = [];
+    for (const row of allRows) {
+      const key = row['Course ID'] + '|||' + row['Section #'];
+      if (!seen.has(key)) { seen.add(key); combined.push(row); }
+    }
+
+    combined.sort((a, b) => {
+      const ka = a['Course ID'] + '|' + a['Section #'];
+      const kb = b['Course ID'] + '|' + b['Section #'];
+      return ka.localeCompare(kb);
+    });
+
+    if (!combined.length) {
+      showStatus(
+        'No course sections found. Make sure the PDF is a <strong>Find Course Sections</strong> export.',
+        'bad'
+      );
+      btn.disabled = false;
+      return;
+    }
+
+    showStatus(`Building spreadsheet&hellip;`, 'info');
+
+    const COLS = [
+      'Course ID','Section #','Course Title','Component','Pattern',
+      'Start Time','End Time','Location (Room)','Instructor','Notes','Cap'
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet([
+      COLS,
+      ...combined.map(r => COLS.map(c => r[c]))
+    ]);
+
+    ws['!cols'] = [
+      {wch:14},{wch:11},{wch:40},{wch:16},{wch:10},
+      {wch:12},{wch:12},{wch:20},{wch:28},{wch:12},{wch:6}
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Course Sections');
+
+    const depts    = [...new Set(combined.map(r => r['Course ID'].split(' ')[0]))].sort().join('_');
+    const filename = `${depts}_Course_Sections.xlsx`;
+
+    XLSX.writeFile(wb, filename);
+
+    showStatus(
+      `<strong>${combined.length} sections</strong> downloaded as <strong>${esc(filename)}</strong>`,
+      'ok'
+    );
+
+    // Clear PDFs from memory immediately after download — nothing is retained
+    files    = [];
+    statuses = [];
+    renderFiles();
+
+  } catch (err) {
+    showStatus(`Error: ${esc(err.message)}`, 'bad');
+    console.error(err);
+  } finally {
+    btn.disabled = files.length === 0;
+  }
+}
+</script>
+</body>
+</html>
